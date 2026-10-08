@@ -34,15 +34,47 @@ const weeklyPlan = [
 export default function App() {
   const [authMode, setAuthMode] = useState(null);
   const [authMessage, setAuthMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function openAuth(mode) {
     setAuthMessage('');
     setAuthMode(mode);
   }
 
-  function submitAuth(event) {
+  async function submitAuth(event) {
     event.preventDefault();
-    setAuthMessage('The form is ready, but account access is not connected to the server yet.');
+    setAuthMessage('');
+    setIsSubmitting(true);
+
+    const formData = new FormData(event.currentTarget);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch(`/api/auth/${authMode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      const result = response.status === 204 ? null : await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(result?.error || `The backend returned HTTP ${response.status}.`);
+      }
+      if (!result) {
+        throw new Error('The backend returned an invalid response.');
+      }
+
+      setAuthMessage(authMode === 'register'
+        ? 'Account created successfully. You can now sign in.'
+        : `Signed in successfully. Welcome, ${result.fullName}.`);
+    } catch (error) {
+      setAuthMessage(error instanceof TypeError
+        ? 'Cannot reach the backend. Check that Tomcat and MySQL are running.'
+        : error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -186,7 +218,9 @@ export default function App() {
               <input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
               <label htmlFor="password">Password</label>
               <input id="password" name="password" type="password" autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} minLength={8} placeholder="At least 8 characters" required />
-              <button className="primary-btn auth-submit" type="submit">{authMode === 'login' ? 'Sign in' : 'Create account'}</button>
+              <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Please wait…' : authMode === 'login' ? 'Sign in' : 'Create account'}
+              </button>
               {authMessage && <p className="auth-message" role="status">{authMessage}</p>}
             </form>
           </section>

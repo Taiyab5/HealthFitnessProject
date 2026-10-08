@@ -9,6 +9,9 @@ npm install
 npm run dev
 ```
 
+The Vite development server proxies `/api` to `http://localhost:8080/healthfitness-api`.
+Start the Tomcat backend and MySQL first to use the registration and login forms.
+
 ## Checks
 
 ```sh
@@ -20,7 +23,7 @@ npm run build
 
 Set the Vercel project root to `frontend`. Vercel uses the Vite build output in `dist`; `vercel.json` directs app routes to the React entry point.
 
-The login and registration forms are currently frontend-only. They do not authenticate or create accounts until an API is connected.
+The login and registration forms use the Tomcat API. Registration stores account details in MySQL; passwords are stored as salted PBKDF2 hashes.
 
 Currently, two official plugins are available:
 
